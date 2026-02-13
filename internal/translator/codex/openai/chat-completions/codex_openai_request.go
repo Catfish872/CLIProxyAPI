@@ -93,27 +93,35 @@ func ConvertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 
 	// Extract system instructions from first system message (string or text object)
 	messages := gjson.GetBytes(rawJSON, "messages")
-	// if messages.IsArray() {
-	// 	arr := messages.Array()
-	// 	for i := 0; i < len(arr); i++ {
-	// 		m := arr[i]
-	// 		if m.Get("role").String() == "system" {
-	// 			c := m.Get("content")
-	// 			if c.Type == gjson.String {
-	// 				out, _ = sjson.Set(out, "instructions", c.String())
-	// 			} else if c.IsObject() && c.Get("type").String() == "text" {
-	// 				out, _ = sjson.Set(out, "instructions", c.Get("text").String())
-	// 			}
-	// 			break
-	// 		}
-	// 	}
-	// }
+	var systemInstructionIndex = -1
+	if messages.IsArray() {
+		arr := messages.Array()
+		for i := 0; i < len(arr); i++ {
+			m := arr[i]
+			if m.Get("role").String() == "system" {
+				c := m.Get("content")
+				if c.Type == gjson.String {
+					out, _ = sjson.Set(out, "instructions", c.String())
+					systemInstructionIndex = i
+				} else if c.IsObject() && c.Get("type").String() == "text" {
+					out, _ = sjson.Set(out, "instructions", c.Get("text").String())
+					systemInstructionIndex = i
+				}
+				if systemInstructionIndex != -1 {
+					break
+				}
+			}
+		}
+	}
 
 	// Build input from messages, handling all message types including tool calls
 	out, _ = sjson.SetRaw(out, "input", `[]`)
 	if messages.IsArray() {
 		arr := messages.Array()
 		for i := 0; i < len(arr); i++ {
+			if i == systemInstructionIndex {
+				continue
+			}
 			m := arr[i]
 			role := m.Get("role").String()
 
