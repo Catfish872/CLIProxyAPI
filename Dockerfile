@@ -7,14 +7,15 @@ RUN go mod download
 
 COPY . .
 
-# 新增这一行：扫描代码并自动下载缺失的依赖包
+# 扫描代码并自动下载缺失的依赖包
 RUN go mod tidy
 
 ARG VERSION=dev
 ARG COMMIT=none
 ARG BUILD_DATE=unknown
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+# 关键修改：增加 GOGC=50 (让垃圾回收更积极) 和 -p 1 (单核排队编译，防止内存飙升)
+RUN CGO_ENABLED=0 GOOS=linux GOGC=50 go build -p 1 \
   -ldflags="-s -w -X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildDate=${BUILD_DATE}'" \
   -o ./CLIProxyAPI ./cmd/server/
 
