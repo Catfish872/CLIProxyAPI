@@ -7,6 +7,9 @@ RUN go mod download
 
 COPY . .
 
+# 新增这一行：扫描代码并自动下载缺失的依赖包
+RUN go mod tidy
+
 ARG VERSION=dev
 ARG COMMIT=none
 ARG BUILD_DATE=unknown
